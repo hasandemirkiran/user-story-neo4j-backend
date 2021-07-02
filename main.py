@@ -2,6 +2,10 @@ import os
 from flask_cors import CORS, cross_origin
 from flask import request
 from flask import Flask
+from flask import jsonify
+from preprocess import all_functions
+from neo_db import create_graph
+from neo_db import get_nodes_specific
 
 
 app = Flask(__name__)
@@ -18,43 +22,23 @@ def hello_world():
 @cross_origin()
 def upload_file():
     if request.method == 'POST':
-        print('------------------------', request.files)
-        print('+++++++++++++++++++++++++', request.files['file'])
         f = request.files['file']
-        f.save('./files/uploaded_file.txt')
-    else:
-        return 'GET UPLOAD'
-
-
-@app.route('/deneme', methods=['GET', 'POST'])
-@cross_origin()
-def login():
-    if request.method == 'POST':
-        if valid_data(request.form['user_stories']):
-            return post_is_true()
+        if f.filename.endswith('.txt'):
+            f.save('./files/uploaded_file.txt')
+            all_functions()
+            create_graph()
+            return jsonify('File succesfully uploaded.')
         else:
-            return post_is_false()
+            return jsonify('Please upload txt file.')
+
     else:
-        return do_the_get()
+        return jsonify('GET UPLOAD')
 
 
-def post_is_false():
-    return 'File is FALSE'
-
-
-def post_is_true():
-    return 'File is TRUE'
-
-
-def do_the_get():
-    return 'Selam GET'
-
-
-def valid_data(data_file):
-    f = os.listdir(data_file)
-    if len(f) > 0:
-        for i in os.listdir(data_file):
-            if i.endswith('.txt'):
-                return True
-            else:
-                return False
+@app.route("/nodes", methods=['GET'])
+@cross_origin()
+def get_nodes():
+    whichNode = request.headers['node']
+    my_list = get_nodes_specific(whichNode)
+    print('----------------', my_list)
+    return jsonify({"Nodes": my_list})
